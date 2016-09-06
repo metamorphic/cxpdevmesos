@@ -1,0 +1,17 @@
+{
+  "id": "/docker/registry",
+  "instances": 1,
+  "cpus": 0.2,
+  "mem": 512,
+  "disk": 128,
+  "container": {
+    "docker": {
+      "type": "DOCKER",
+      "image": "registry:2",
+      "network": "BRIDGE",
+      "portMappings": [
+        { "containerPort": 5000, "hostPort": 0, "servicePort": 5000, "protocol": "tcp" }
+      ]
+    }
+  }
+}

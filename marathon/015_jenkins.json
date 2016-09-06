@@ -1,0 +1,29 @@
+{
+  "id": "jenkins",
+  "cpus": 0.2,
+  "mem": 1024,
+  "disk": 128,
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
+    "volumes": [
+      {
+        "containerPath": "/var/jenkins_home",
+        "hostPath": "/var/lib/docker/jenkins_home",
+        "mode": "RW"
+      }
+    ],
+    "docker": {
+      "image": "192.168.0.5:18444/jenkins",
+      "network": "BRIDGE",
+      "parameters": [
+        { "key": "user", "value": "root" }
+      ],
+      "forcePullImage": false,
+      "portMappings": [
+        { "containerPort": 8080, "hostPort": 0, "servicePort": 7000, "protocol": "tcp" },
+        { "containerPort": 50000, "hostPort": 0, "servicePort": 50000, "protocol": "tcp" }
+      ]
+    }
+  }
+}

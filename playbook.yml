@@ -1,0 +1,167 @@
+---
+- hosts: master
+  remote_user: vagrant
+  become: yes
+  become_method: sudo
+  tasks:
+      - name: update the hosts file
+        template: src=./hosts.j2 dest=/etc/hosts
+      - name: update the rsyslog config
+        template: src=./mesos.conf.j2 dest=/etc/rsyslog.d/mesos.conf
+      - name: restart rsyslog
+        shell: service rsyslog restart
+      - name: install the mesosphere yum repo
+        yum: name=http://repos.mesosphere.com/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm state=present
+      - name: install the zookeeper yum repo
+        yum: name=http://archive.cloudera.com/cdh4/one-click-install/redhat/6/x86_64/cloudera-cdh-4-0.x86_64.rpm state=present
+    #   - name: install zookeeper
+    #     yum: pkg=zookeeper,zookeeper-server state=latest
+      # install from local to speed things up
+      - name: install zookeeper-server
+        yum: name=./zookeeper-server-3.4.5+28-1.cdh4.7.1.p0.13.el6.x86_64.rpm state=present
+      - name: install zookeeper
+        yum: name=./zookeeper-3.4.5+28-1.cdh4.7.1.p0.13.el6.x86_64.rpm state=present
+      # end
+      - name: configure zookeeper ID
+        become_user: zookeeper
+        shell: zookeeper-server-initialize --myid=1
+    #   - name: install the mesos, marathon, chronos, docker, and haproxy packages
+    #     yum: pkg=device-mapper-event-libs,mesos,marathon,chronos,docker,haproxy state=latest
+      # install from local to speed things up
+      - name: install device-mapper-event-libs
+        yum: name=./device-mapper-event-libs-1.02.93-3.el7_1.1.x86_64.rpm state=present
+      - name: install mesos
+        yum: name=./mesos-0.25.0-0.2.70.centos701406.x86_64.rpm state=present
+      - name: install marathon
+        yum: name=./marathon-0.11.1-1.0.432.el7.x86_64.rpm state=present
+      - name: install chronos
+        yum: name=./chronos-2.4.0-0.1.20151007110204.el7.x86_64.rpm state=present
+      - name: install docker
+        yum: name=./docker-1.8.2-7.el7.centos.x86_64.rpm state=present
+      - name: install haproxy
+        yum: name=./haproxy-1.5.4-4.el7_1.1.x86_64.rpm state=present
+      # end
+      - name: Ensure /etc/haproxy-marathon-bridge exists
+        file: path=/etc/haproxy-marathon-bridge state=directory
+      - name: configure haproxy-marathon-bridge
+        template: src=./marathons.j2 dest=/etc/haproxy-marathon-bridge/marathons
+      - name: configure docker for insecure registry
+        template: src=./sysconfig.docker.j2 dest=/etc/sysconfig/docker
+      - name: configure containerizers
+        lineinfile: dest=/etc/mesos-slave/containerizers create=yes line="docker,mesos"
+      - name: increase the executor timeout to account for the potential delay in pulling a docker image
+        shell: echo '20mins' > /etc/mesos-slave/executor_registration_timeout
+      - name: increase the marathon task_launch_timeout to at least the executor timeout, in milliseconds
+        shell: echo 'MARATHON_TASK_LAUNCH_TIMEOUT=1200000' > /etc/default/marathon
+      - name: start up zookeeper
+        service: name=zookeeper-server state=started enabled=yes
+      - name: start up the mesos-master
+        service: name=mesos-master state=started enabled=yes
+      - name: make sure mesos-slave is running
+        service: name=mesos-slave state=started enabled=yes
+      - name: start marathon
+        service: name=marathon state=started enabled=yes
+      - name: start chronos
+        service: name=chronos state=started enabled=yes
+      - name: start docker
+        service: name=docker state=started enabled=yes
+      - name: start haproxy
+        service: name=haproxy state=started enabled=yes
+    #   - name: install go, git, and dns tools
+    #     yum: pkg=golang,git,bind-utils state=latest
+      # install from local to speed things up
+      - name: install golang-pkg-linux-amd64
+        yum: name=./golang-pkg-linux-amd64-1.4.2-4.el7_1.noarch.rpm state=present
+      - name: install golang-pkg-bin-linux-amd64
+        yum: name=./golang-pkg-bin-linux-amd64-1.4.2-4.el7_1.x86_64.rpm state=present
+      - name: install go
+        yum: name=./golang-1.4.2-4.el7_1.x86_64.rpm state=present
+      - name: install perl-git
+        yum: name=./perl-Git-1.8.3.1-4.el7.noarch.rpm state=present
+      - name: install git
+        yum: name=./git-1.8.3.1-4.el7.x86_64.rpm state=present
+      - name: install bind-utils
+        yum: name=./bind-utils-9.9.4-18.el7_1.5.x86_64.rpm state=present
+      # end
+      - name: install haproxy-marathon-bridge
+        shell: cd /vagrant && ./haproxy-marathon-bridge install_cronjob
+    #   - name: install ruby
+    #     yum: pkg=ruby state=latest
+      # install from local to speed things up
+      - name: install rubygems
+        yum: name=./rubygems-2.0.14-25.el7_1.noarch.rpm state=present
+      - name: install rubygems-rdoc
+        yum: name=./rubygem-rdoc-4.0.0-25.el7_1.noarch.rpm state=present
+      - name: install rubygems-psych
+        yum: name=./rubygem-psych-2.0.0-25.el7_1.x86_64.rpm state=present
+      - name: install rubygems-json
+        yum: name=./rubygem-json-1.7.7-25.el7_1.x86_64.rpm state=present
+      - name: install rubygems-io-console
+        yum: name=./rubygem-io-console-0.4.2-25.el7_1.x86_64.rpm state=present
+      - name: install rubygems-bigdecimal
+        yum: name=./rubygem-bigdecimal-1.2.0-25.el7_1.x86_64.rpm state=present
+      - name: install rubygems-irb
+        yum: name=./ruby-irb-2.0.0.598-25.el7_1.noarch.rpm state=present
+      - name: install ruby
+        yum: name=./ruby-2.0.0.598-25.el7_1.x86_64.rpm state=present
+      # end
+      - name: sync chronos jobs
+        shell: ruby /vagrant/chronos-sync.rb -u http://192.168.31.10:4400/ -p /vagrant/chronos
+      - name: build/configure mesos-dns
+        become_user: vagrant
+        shell: sh /vagrant/installdns.sh
+      - name: configure dns
+        template: src=./resolv.conf.j2 dest=/etc/resolv.conf
+- hosts: nodes
+  remote_user: vagrant
+  become: yes
+  become_method: sudo
+  tasks:
+      - name: update the hosts file
+        template: src=./hosts.j2 dest=/etc/hosts
+      - name: install the mesosphere yum repo
+        yum: name=http://repos.mesosphere.com/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm state=present
+    #   - name: install the mesos, docker, and haproxy packages
+    #     yum: pkg=device-mapper-event-libs,mesos,docker,haproxy state=latest
+      # install from local to speed things up
+      - name: install device-mapper-event-libs
+        yum: name=./device-mapper-event-libs-1.02.93-3.el7_1.1.x86_64.rpm state=present
+      - name: install mesos
+        yum: name=./mesos-0.25.0-0.2.70.centos701406.x86_64.rpm state=present
+      - name: install docker
+        yum: name=./docker-1.8.2-7.el7.centos.x86_64.rpm state=present
+      - name: install haproxy
+        yum: name=./haproxy-1.5.4-4.el7_1.1.x86_64.rpm state=present
+      # end
+      - name: Ensure /etc/haproxy-marathon-bridge exists
+        file: path=/etc/haproxy-marathon-bridge state=directory
+      - name: configure haproxy-marathon-bridge
+        template: src=./marathons.j2 dest=/etc/haproxy-marathon-bridge/marathons
+      - name: configure docker for insecure registry
+        template: src=./sysconfig.docker.j2 dest=/etc/sysconfig/docker
+      - name: configure containerizers
+        lineinfile: dest=/etc/mesos-slave/containerizers create=yes line="docker,mesos"
+      - name: increase the executor timeout to account for the potential delay in pulling a docker image
+        shell: echo '5mins' > /etc/mesos-slave/executor_registration_timeout
+      - name: set the zookeeper master
+        replace: dest=/etc/mesos/zk regexp="localhost" replace="192.168.31.10"
+      - name: start mesos-slave
+        service: name=mesos-slave state=started enabled=yes
+      - name: start docker
+        service: name=docker state=started enabled=yes
+      - name: start haproxy
+        service: name=haproxy state=started enabled=yes
+      - name: install haproxy-marathon-bridge
+        shell: cd /vagrant && ./haproxy-marathon-bridge install_cronjob
+      - name: configure dns
+        template: src=./resolv.conf.j2 dest=/etc/resolv.conf
+      - name: deploy mesos-dns app
+        shell: cd /vagrant && sh post_dns.sh
+      - name: wait for mesos-dns app to be deployed
+        pause: minutes=1
+    #   - name: start marathon services
+    #     shell: cd /vagrant/marathon && sh post.sh
+    #   - name: wait for jenkins to become available
+    #     wait_for: port=7000 delay=540
+    #   - name: install CloudBees Docker Build and Publish plugin for Jenkins
+    #     shell: cd /vagrant && sh install_docker_jenkins_plugin.sh

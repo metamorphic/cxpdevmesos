@@ -1,0 +1,38 @@
+{
+  "id": "gitlab",
+  "cpus": 0.2,
+  "mem": 512,
+  "disk": 128,
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
+    "volumes": [
+      {
+        "containerPath": "/home/git/data",
+        "hostPath": "/var/lib/docker/gitlab",
+        "mode": "RW"
+      }
+    ],
+    "docker": {
+      "image": "192.168.0.5:18444/sameersbn/gitlab:8.1.2",
+      "network": "BRIDGE",
+      "parameters": [
+        { "key": "env", "value": "DB_TYPE=postgres" },
+        { "key": "env", "value": "DB_HOST=192.168.33.10" },
+        { "key": "env", "value": "DB_NAME=gitlabhq_production" },
+        { "key": "env", "value": "DB_USER=gitlab" },
+        { "key": "env", "value": "DB_PASS=password" },
+        { "key": "env", "value": "REDIS_HOST=192.168.33.10" },
+        { "key": "env", "value": "GITLAB_HOST=node1" },
+        { "key": "env", "value": "GITLAB_PORT=10080" },
+        { "key": "env", "value": "GITLAB_SSH_PORT=10022" },
+        { "key": "env", "value": "GITLAB_SECRETS_DB_KEY_BASE=its-turtles-all-the-way-down" }
+      ],
+      "forcePullImage": false,
+      "portMappings": [
+        { "containerPort": 22, "hostPort": 0, "servicePort": 10022, "protocol": "tcp" },
+        { "containerPort": 80, "hostPort": 0, "servicePort": 10080, "protocol": "tcp" }
+      ]
+    }
+  }
+}

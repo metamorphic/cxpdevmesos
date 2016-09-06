@@ -1,0 +1,28 @@
+{
+  "id": "postgresql",
+  "cpus": 0.2,
+  "mem": 512,
+  "disk": 128,
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
+    "volumes": [
+      {
+        "containerPath": "/var/lib/postgresql",
+        "hostPath": "/var/lib/docker/postgresql",
+        "mode": "RW"
+      }
+    ],
+    "docker": {
+      "image": "192.168.0.5:18444/postgres",
+      "network": "BRIDGE",
+      "parameters": [
+        { "key": "env", "value": "POSTGRES_PASSWORD=password" }
+      ],
+      "forcePullImage": false,
+      "portMappings": [
+        { "containerPort": 5432, "hostPort": 0, "servicePort": 5432, "protocol": "tcp" }
+      ]
+    }
+  }
+}
